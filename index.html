@@ -7,6 +7,8 @@
     <!-- Tailwind CSS untuk UI/UX Modern -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- PapaParse untuk membaca file CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         /* Custom scrollbar untuk dropdown */
@@ -26,8 +28,9 @@
                      alt="Logo Danantara" class="h-10 sm:h-12 object-contain">
             </div>
             <div class="flex-shrink-0">
-                <img src="https://www.posindonesia.co.id/_next/image?url=https%3A%2F%2Fadmin-piol.posindonesia.co.id%2Fmedia%2FPosIND_Main%20Color.png&w=750&q=75" 
-                     alt="Logo Pos IND" class="h-10 sm:h-12 object-contain">
+                <!-- URL logo baru dengan referrerpolicy -->
+                <img src="https://www.posindonesia.co.id/_next/image?url=https%3A%2F%2Fadmin-piol.posindonesia.co.id%2Fmedia%2Flogo-posind-dark-1.png&w=1920&q=75" 
+                     alt="Logo Pos IND" class="h-10 sm:h-12 object-contain" referrerpolicy="no-referrer">
             </div>
         </div>
     </header>
@@ -42,7 +45,13 @@
             </div>
 
             <div class="p-6 sm:p-8">
-                <form id="calcForm" class="space-y-6">
+                
+                <!-- Alert jika CSV sedang loading / gagal -->
+                <div id="loadingStatus" class="mb-4 text-sm text-[#FF5722] font-semibold animate-pulse">
+                    Mencoba memuat data Tarif_Paket_Tanjungpinang.csv...
+                </div>
+
+                <form id="calcForm" class="space-y-6 hidden">
                     
                     <!-- Tujuan Autocomplete -->
                     <div class="relative">
@@ -110,9 +119,9 @@
                             <span class="text-gray-600">Chargeable Weight (Tertinggi):</span>
                             <span id="resChargeable" class="font-semibold text-[#FF5722]"></span>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between items-center">
                             <span class="text-gray-600">Berat Ditagihkan (Toleransi 0.3 kg):</span>
-                            <span id="resFinalWeight" class="font-bold text-gray-900 bg-gray-200 px-2 py-0.5 rounded"></span>
+                            <span id="resFinalWeight" class="font-bold text-gray-900 bg-gray-200 px-2 py-0.5 rounded text-base"></span>
                         </div>
                         <div class="pt-3 mt-3 border-t border-gray-200 flex justify-between items-center">
                             <span class="text-gray-600 font-bold">Total Tarif (PPB_PKT):</span>
@@ -126,28 +135,14 @@
     </main>
 
     <script>
-        // === MOCKUP DATA TARIF ===
-        // Di deployment asli, hapus array ini dan gunakan fetch('tarif.json')
-        // Ini simulasi data dari Tarif_Paket_Tanjungpinang.xlsx
-        const dataTarif = [
-            { tujuan: "Tanjungpinang Kota", tarif_per_kg: 10000 },
-            { tujuan: "Bukit Bestari, Tanjungpinang", tarif_per_kg: 10000 },
-            { tujuan: "Batam Kota, Batam", tarif_per_kg: 12000 },
-            { tujuan: "Batu Aji, Batam", tarif_per_kg: 12000 },
-            { tujuan: "Sekupang, Batam", tarif_per_kg: 12000 },
-            { tujuan: "Bintan Utara, Bintan", tarif_per_kg: 15000 },
-            { tujuan: "Bintan Timur, Bintan", tarif_per_kg: 15000 },
-            { tujuan: "Tebing Tinggi, Kep. Meranti", tarif_per_kg: 25000 },
-            { tujuan: "Medan Sunggal, Medan", tarif_per_kg: 35000 }, // Sedikit menyapa aset properti di Medan 😉
-            { tujuan: "Langsa Kota, Langsa", tarif_per_kg: 42000 }
-        ];
-
+        let dataTarif = [];
         let selectedTarif = null;
 
         // Elemen DOM
         const inputTujuan = document.getElementById('tujuan');
         const dropdown = document.getElementById('dropdown');
         const form = document.getElementById('calcForm');
+        const loadingStatus = document.getElementById('loadingStatus');
 
         // Formatter Rupiah
         const formatRupiah = (number) => {
@@ -158,19 +153,53 @@
             }).format(number);
         };
 
-        // Logika Autocomplete UI
+        // 1. MEMUAT FILE CSV MENGGUNAKAN PAPAPARSE
+        // Pastikan nama file sama persis saat diletakkan di GitHub (Tarif_Paket_Tanjungpinang.csv)
+        Papa.parse("Tarif_Paket_Tanjungpinang.csv", {
+            download: true,
+            header: true, // Beritahu script bahwa baris pertama adalah judul kolom
+            delimiter: ";", // Berdasarkan struktur datanya, dipisahkan oleh titik koma
+            skipEmptyLines: true,
+            complete: function(results) {
+                // Mapping data dari CSV
+                dataTarif = results.data.map(row => {
+                    // Ambil string tarif (misal: "27.000"), lalu bersihkan titiknya agar jadi angka
+                    let tarifStr = row['Tarif per Kg Berikutnya'] || "0";
+                    let tarifAngka = parseFloat(tarifStr.replace(/\./g, '')) || 0;
+                    
+                    return {
+                        tujuan: row['Tujuan Kab/Kota/Kec'],
+                        tarif_per_kg: tarifAngka
+                    };
+                }).filter(item => item.tujuan); // Filter yang kosong
+                
+                // Ubah UI ketika data sudah siap
+                loadingStatus.classList.add('hidden');
+                form.classList.remove('hidden');
+            },
+            error: function(err) {
+                loadingStatus.textContent = "Gagal memuat file Tarif_Paket_Tanjungpinang.csv. Pastikan file ada di folder yang sama!";
+                loadingStatus.classList.remove('text-[#FF5722]', 'animate-pulse');
+                loadingStatus.classList.add('text-red-600');
+                console.error("CSV Parse Error:", err);
+            }
+        });
+
+        // 2. Logika Autocomplete UI
         inputTujuan.addEventListener('input', function() {
             const val = this.value.toLowerCase();
             dropdown.innerHTML = '';
-            selectedTarif = null; // reset pilihan jika user mengetik ulang
+            selectedTarif = null; 
             
             if (!val) {
                 dropdown.classList.add('hidden');
                 return;
             }
 
-            // Filter data berdasar input
-            const filtered = dataTarif.filter(item => item.tujuan.toLowerCase().includes(val));
+            // Filter data berdasar input (tampilkan maksimal 10 biar tidak berat/terlalu panjang)
+            const filtered = dataTarif.filter(item => 
+                item.tujuan && item.tujuan.toLowerCase().includes(val)
+            ).slice(0, 10);
 
             if (filtered.length > 0) {
                 dropdown.classList.remove('hidden');
@@ -201,28 +230,34 @@
             }
         });
 
-        // Logika Perhitungan (Toleransi 0.3 kg Pos Indonesia)
+        // 3. Logika Perhitungan Berat (Toleransi 0.3 kg & Min. 3 Kg)
         function hitungBeratPos(weight) {
-            if(weight <= 1) return 1; // Minimum charge 1 kg
-            
             let integerPart = Math.floor(weight);
             let fractionalPart = weight - integerPart;
+            let finalWeight;
 
-            // Jika pecahan <= 0.3, bulatkan ke bawah. Jika > 0.3 bulatkan ke atas.
-            // Contoh: 3.3 -> 3 | 3.31 -> 4
+            // Logika Toleransi: Jika pecahan <= 0.3, bulatkan ke bawah. Jika > 0.3 bulatkan ke atas.
+            // Contoh: 3.3 -> 3 kg | 3.31 -> 4 kg
             if (fractionalPart <= 0.30) {
-                return integerPart;
+                finalWeight = integerPart;
             } else {
-                return integerPart + 1;
+                finalWeight = integerPart + 1;
             }
+
+            // Mengingat ini adalah Paket Pos Biasa (PPB_PKT), berat minimal selalu ditagihkan 3 Kg.
+            if (finalWeight < 3) {
+                return 3;
+            }
+
+            return finalWeight;
         }
 
-        // Handle Submit
+        // 4. Handle Submit Form
         form.addEventListener('submit', function(e) {
             e.preventDefault();
 
             if (!selectedTarif) {
-                alert('Mohon pilih tujuan dari daftar dropdown (list Excel).');
+                alert('Mohon pilih tujuan yang sesuai dari daftar dropdown pencarian.');
                 return;
             }
 
@@ -238,13 +273,13 @@
                 beratVolumetrik = (p * l * t) / 6000;
             }
 
-            // Hitung Chargeable Weight (tertinggi antara aktual vs volumetrik)
+            // Hitung Chargeable Weight (tertinggi)
             const chargeableWeight = Math.max(beratAktual, beratVolumetrik);
 
-            // Hitung Berat Akhir (Final Tagihan) menggunakan standar Pos Indonesia (Toleransi 0.3)
+            // Hitung Berat Akhir (dengan aturan toleransi 0.3 dan minimum 3 Kg)
             const finalWeight = hitungBeratPos(chargeableWeight);
 
-            // Hitung Tarif Total
+            // Hitung Tarif Total (Berat Akhir * Harga Per Kg dari CSV)
             const totalTarif = finalWeight * selectedTarif.tarif_per_kg;
 
             // Update UI Hasil
@@ -252,7 +287,14 @@
             document.getElementById('resBeratAktual').textContent = beratAktual.toFixed(2) + ' kg';
             document.getElementById('resBeratVolumetrik').textContent = beratVolumetrik > 0 ? beratVolumetrik.toFixed(2) + ' kg' : '0 kg (Dimensi kosong)';
             document.getElementById('resChargeable').textContent = chargeableWeight.toFixed(2) + ' kg';
-            document.getElementById('resFinalWeight').textContent = finalWeight + ' kg';
+            
+            // Tambahkan penjelasan bila terkena min 3 kg
+            if (finalWeight === 3 && chargeableWeight < 3) {
+                document.getElementById('resFinalWeight').textContent = finalWeight + ' kg (Min. 3 kg PPB)';
+            } else {
+                document.getElementById('resFinalWeight').textContent = finalWeight + ' kg';
+            }
+            
             document.getElementById('resTarif').textContent = formatRupiah(totalTarif);
 
             // Tampilkan Result Box
