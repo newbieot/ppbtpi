@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Tarif Pos - Danantara x Pos IND</title>
+    <!-- Tailwind CSS untuk UI/UX Modern -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        /* Custom scrollbar untuk dropdown */
+        #dropdown::-webkit-scrollbar { width: 6px; }
+        #dropdown::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        #dropdown::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        #dropdown::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex-shrink-0">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Danantara_Indonesia_%28no_SW%29.svg/3840px-Danantara_Indonesia_%28no_SW%29.svg.png" 
+                     alt="Logo Danantara" class="h-10 sm:h-12 object-contain">
+            </div>
+            <div class="flex-shrink-0">
+                <img src="https://www.posindonesia.co.id/_next/image?url=https%3A%2F%2Fadmin-piol.posindonesia.co.id%2Fmedia%2FPosIND_Main%20Color.png&w=750&q=75" 
+                     alt="Logo Pos IND" class="h-10 sm:h-12 object-contain">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            
+            <div class="bg-gradient-to-r from-[#FF5722] to-[#E64A19] p-6 text-white">
+                <h1 class="text-2xl font-bold">Kalkulator Tarif Paket Pos Biasa</h1>
+                <p class="text-sm opacity-90 mt-1">Sistem Perhitungan Aktual & Volumetrik (Toleransi 0.3 kg)</p>
+            </div>
+
+            <div class="p-6 sm:p-8">
+                <form id="calcForm" class="space-y-6">
+                    
+                    <!-- Tujuan Autocomplete -->
+                    <div class="relative">
+                        <label for="tujuan" class="block text-sm font-semibold text-gray-700 mb-1">Tujuan (Kab/Kota/Kec)</label>
+                        <input type="text" id="tujuan" autocomplete="off" placeholder="Ketik nama kecamatan atau kota tujuan..." 
+                               class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#FF5722] focus:border-[#FF5722] transition-all" required>
+                        <ul id="dropdown" class="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto hidden mt-1">
+                            <!-- List dropdown akan di-generate via JS -->
+                        </ul>
+                    </div>
+
+                    <!-- Berat Aktual -->
+                    <div>
+                        <label for="beratAktual" class="block text-sm font-semibold text-gray-700 mb-1">Berat Aktual (kg)</label>
+                        <input type="number" id="beratAktual" step="0.01" min="0" placeholder="Contoh: 3.3" 
+                               class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#FF5722] focus:border-[#FF5722] transition-all" required>
+                    </div>
+
+                    <!-- Dimensi PxLxT -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Dimensi Paket (cm)</label>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <input type="number" id="panjang" step="0.1" min="0" placeholder="Panjang" 
+                                       class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#FF5722] focus:border-[#FF5722] transition-all">
+                                <span class="text-xs text-gray-500 mt-1 block px-1">Panjang</span>
+                            </div>
+                            <div>
+                                <input type="number" id="lebar" step="0.1" min="0" placeholder="Lebar" 
+                                       class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#FF5722] focus:border-[#FF5722] transition-all">
+                                <span class="text-xs text-gray-500 mt-1 block px-1">Lebar</span>
+                            </div>
+                            <div>
+                                <input type="number" id="tinggi" step="0.1" min="0" placeholder="Tinggi" 
+                                       class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#FF5722] focus:border-[#FF5722] transition-all">
+                                <span class="text-xs text-gray-500 mt-1 block px-1">Tinggi</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full bg-[#FF5722] hover:bg-[#E64A19] text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors text-lg">
+                        Hitung Tarif
+                    </button>
+                </form>
+
+                <!-- Result Card -->
+                <div id="resultBox" class="mt-8 bg-gray-50 rounded-xl p-5 border border-gray-200 hidden">
+                    <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Rincian Perhitungan</h3>
+                    
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Tujuan:</span>
+                            <span id="resTujuan" class="font-semibold text-gray-800 text-right"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Berat Aktual:</span>
+                            <span id="resBeratAktual" class="font-semibold text-gray-800"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Berat Volumetrik (P×L×T / 6000):</span>
+                            <span id="resBeratVolumetrik" class="font-semibold text-gray-800"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Chargeable Weight (Tertinggi):</span>
+                            <span id="resChargeable" class="font-semibold text-[#FF5722]"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Berat Ditagihkan (Toleransi 0.3 kg):</span>
+                            <span id="resFinalWeight" class="font-bold text-gray-900 bg-gray-200 px-2 py-0.5 rounded"></span>
+                        </div>
+                        <div class="pt-3 mt-3 border-t border-gray-200 flex justify-between items-center">
+                            <span class="text-gray-600 font-bold">Total Tarif (PPB_PKT):</span>
+                            <span id="resTarif" class="text-2xl font-black text-[#FF5722]"></span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // === MOCKUP DATA TARIF ===
+        // Di deployment asli, hapus array ini dan gunakan fetch('tarif.json')
+        // Ini simulasi data dari Tarif_Paket_Tanjungpinang.xlsx
+        const dataTarif = [
+            { tujuan: "Tanjungpinang Kota", tarif_per_kg: 10000 },
+            { tujuan: "Bukit Bestari, Tanjungpinang", tarif_per_kg: 10000 },
+            { tujuan: "Batam Kota, Batam", tarif_per_kg: 12000 },
+            { tujuan: "Batu Aji, Batam", tarif_per_kg: 12000 },
+            { tujuan: "Sekupang, Batam", tarif_per_kg: 12000 },
+            { tujuan: "Bintan Utara, Bintan", tarif_per_kg: 15000 },
+            { tujuan: "Bintan Timur, Bintan", tarif_per_kg: 15000 },
+            { tujuan: "Tebing Tinggi, Kep. Meranti", tarif_per_kg: 25000 },
+            { tujuan: "Medan Sunggal, Medan", tarif_per_kg: 35000 }, // Sedikit menyapa aset properti di Medan 😉
+            { tujuan: "Langsa Kota, Langsa", tarif_per_kg: 42000 }
+        ];
+
+        let selectedTarif = null;
+
+        // Elemen DOM
+        const inputTujuan = document.getElementById('tujuan');
+        const dropdown = document.getElementById('dropdown');
+        const form = document.getElementById('calcForm');
+
+        // Formatter Rupiah
+        const formatRupiah = (number) => {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(number);
+        };
+
+        // Logika Autocomplete UI
+        inputTujuan.addEventListener('input', function() {
+            const val = this.value.toLowerCase();
+            dropdown.innerHTML = '';
+            selectedTarif = null; // reset pilihan jika user mengetik ulang
+            
+            if (!val) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            // Filter data berdasar input
+            const filtered = dataTarif.filter(item => item.tujuan.toLowerCase().includes(val));
+
+            if (filtered.length > 0) {
+                dropdown.classList.remove('hidden');
+                filtered.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-2 hover:bg-[#FF5722] hover:text-white cursor-pointer transition-colors border-b last:border-b-0';
+                    li.textContent = item.tujuan;
+                    li.addEventListener('click', () => {
+                        inputTujuan.value = item.tujuan;
+                        selectedTarif = item;
+                        dropdown.classList.add('hidden');
+                    });
+                    dropdown.appendChild(li);
+                });
+            } else {
+                dropdown.classList.remove('hidden');
+                const li = document.createElement('li');
+                li.className = 'px-4 py-2 text-gray-500 italic';
+                li.textContent = 'Tujuan tidak ditemukan';
+                dropdown.appendChild(li);
+            }
+        });
+
+        // Sembunyikan dropdown jika klik di luar
+        document.addEventListener('click', function(e) {
+            if (!inputTujuan.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // Logika Perhitungan (Toleransi 0.3 kg Pos Indonesia)
+        function hitungBeratPos(weight) {
+            if(weight <= 1) return 1; // Minimum charge 1 kg
+            
+            let integerPart = Math.floor(weight);
+            let fractionalPart = weight - integerPart;
+
+            // Jika pecahan <= 0.3, bulatkan ke bawah. Jika > 0.3 bulatkan ke atas.
+            // Contoh: 3.3 -> 3 | 3.31 -> 4
+            if (fractionalPart <= 0.30) {
+                return integerPart;
+            } else {
+                return integerPart + 1;
+            }
+        }
+
+        // Handle Submit
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (!selectedTarif) {
+                alert('Mohon pilih tujuan dari daftar dropdown (list Excel).');
+                return;
+            }
+
+            // Ambil Value
+            const beratAktual = parseFloat(document.getElementById('beratAktual').value) || 0;
+            const p = parseFloat(document.getElementById('panjang').value) || 0;
+            const l = parseFloat(document.getElementById('lebar').value) || 0;
+            const t = parseFloat(document.getElementById('tinggi').value) || 0;
+
+            // Hitung Volumetrik
+            let beratVolumetrik = 0;
+            if (p > 0 && l > 0 && t > 0) {
+                beratVolumetrik = (p * l * t) / 6000;
+            }
+
+            // Hitung Chargeable Weight (tertinggi antara aktual vs volumetrik)
+            const chargeableWeight = Math.max(beratAktual, beratVolumetrik);
+
+            // Hitung Berat Akhir (Final Tagihan) menggunakan standar Pos Indonesia (Toleransi 0.3)
+            const finalWeight = hitungBeratPos(chargeableWeight);
+
+            // Hitung Tarif Total
+            const totalTarif = finalWeight * selectedTarif.tarif_per_kg;
+
+            // Update UI Hasil
+            document.getElementById('resTujuan').textContent = selectedTarif.tujuan;
+            document.getElementById('resBeratAktual').textContent = beratAktual.toFixed(2) + ' kg';
+            document.getElementById('resBeratVolumetrik').textContent = beratVolumetrik > 0 ? beratVolumetrik.toFixed(2) + ' kg' : '0 kg (Dimensi kosong)';
+            document.getElementById('resChargeable').textContent = chargeableWeight.toFixed(2) + ' kg';
+            document.getElementById('resFinalWeight').textContent = finalWeight + ' kg';
+            document.getElementById('resTarif').textContent = formatRupiah(totalTarif);
+
+            // Tampilkan Result Box
+            document.getElementById('resultBox').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
