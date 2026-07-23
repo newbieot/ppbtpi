@@ -28,7 +28,6 @@
                      alt="Logo Danantara" class="h-10 sm:h-12 object-contain">
             </div>
             <div class="flex-shrink-0">
-                <!-- URL logo baru dengan referrerpolicy -->
                 <img src="https://www.posindonesia.co.id/_next/image?url=https%3A%2F%2Fadmin-piol.posindonesia.co.id%2Fmedia%2Flogo-posind-dark-1.png&w=1920&q=75" 
                      alt="Logo Pos IND" class="h-10 sm:h-12 object-contain" referrerpolicy="no-referrer">
             </div>
@@ -46,20 +45,29 @@
 
             <div class="p-6 sm:p-8">
                 
-                <!-- Alert jika CSV sedang loading / gagal -->
+                <!-- Alert Loading Data -->
                 <div id="loadingStatus" class="mb-4 text-sm text-[#FF5722] font-semibold animate-pulse">
-                    Mencoba memuat data Tarif_Paket_Tanjungpinang.csv...
+                    Memuat data tarif...
                 </div>
 
                 <form id="calcForm" class="space-y-6 hidden">
                     
+                    <!-- Pilihan Kantor Asal -->
+                    <div>
+                        <label for="asal" class="block text-sm font-semibold text-gray-700 mb-1">Kantor Asal Pengiriman</label>
+                        <select id="asal" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#FF5722] focus:border-[#FF5722] transition-all bg-white cursor-pointer font-medium" required>
+                            <option value="batam" selected>KCU Batam</option>
+                            <option value="tanjungpinang">Tanjungpinang</option>
+                        </select>
+                    </div>
+
                     <!-- Tujuan Autocomplete -->
                     <div class="relative">
                         <label for="tujuan" class="block text-sm font-semibold text-gray-700 mb-1">Tujuan (Kab/Kota/Kec)</label>
                         <input type="text" id="tujuan" autocomplete="off" placeholder="Ketik nama kecamatan atau kota tujuan..." 
                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#FF5722] focus:border-[#FF5722] transition-all" required>
                         <ul id="dropdown" class="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto hidden mt-1">
-                            <!-- List dropdown akan di-generate via JS -->
+                            <!-- List dropdown otomatis muncul di sini -->
                         </ul>
                     </div>
 
@@ -104,6 +112,10 @@
                     
                     <div class="space-y-3 text-sm">
                         <div class="flex justify-between">
+                            <span class="text-gray-600">Asal Pengiriman:</span>
+                            <span id="resAsal" class="font-semibold text-gray-800 text-right"></span>
+                        </div>
+                        <div class="flex justify-between">
                             <span class="text-gray-600">Tujuan:</span>
                             <span id="resTujuan" class="font-semibold text-gray-800 text-right"></span>
                         </div>
@@ -138,7 +150,14 @@
         let dataTarif = [];
         let selectedTarif = null;
 
+        // Pemetaan File CSV
+        const fileData = {
+            'batam': 'Tarif_Paket_Batam.csv',
+            'tanjungpinang': 'Tarif_Paket_Tanjungpinang.csv'
+        };
+
         // Elemen DOM
+        const selectAsal = document.getElementById('asal');
         const inputTujuan = document.getElementById('tujuan');
         const dropdown = document.getElementById('dropdown');
         const form = document.getElementById('calcForm');
@@ -153,39 +172,57 @@
             }).format(number);
         };
 
-        // 1. MEMUAT FILE CSV MENGGUNAKAN PAPAPARSE
-        // Pastikan nama file sama persis saat diletakkan di GitHub (Tarif_Paket_Tanjungpinang.csv)
-        Papa.parse("Tarif_Paket_Tanjungpinang.csv", {
-            download: true,
-            header: true, // Beritahu script bahwa baris pertama adalah judul kolom
-            delimiter: ";", // Berdasarkan struktur datanya, dipisahkan oleh titik koma
-            skipEmptyLines: true,
-            complete: function(results) {
-                // Mapping data dari CSV
-                dataTarif = results.data.map(row => {
-                    // Ambil string tarif (misal: "27.000"), lalu bersihkan titiknya agar jadi angka
-                    let tarifStr = row['Tarif per Kg Berikutnya'] || "0";
-                    let tarifAngka = parseFloat(tarifStr.replace(/\./g, '')) || 0;
+        // Fungsi Memuat Data Tarif berdasarkan Asal
+        function loadTarif(asalKey) {
+            loadingStatus.classList.remove('hidden');
+            loadingStatus.textContent = `Memuat data tarif dari ${fileData[asalKey]}...`;
+            loadingStatus.classList.add('text-[#FF5722]', 'animate-pulse');
+            loadingStatus.classList.remove('text-red-600');
+            
+            form.classList.add('hidden');
+            document.getElementById('resultBox').classList.add('hidden');
+            inputTujuan.value = '';
+            selectedTarif = null;
+            dropdown.classList.add('hidden');
+
+            // PapaParse untuk membaca file, Delimiter dibuat auto (bisa koma/titik koma)
+            Papa.parse(fileData[asalKey], {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    // Mapping data dari CSV
+                    dataTarif = results.data.map(row => {
+                        let tarifStr = row['Tarif per Kg Berikutnya'] || "0";
+                        let tarifAngka = parseFloat(tarifStr.replace(/\./g, '')) || 0;
+                        
+                        return {
+                            tujuan: row['Tujuan Kab/Kota/Kec'],
+                            tarif_per_kg: tarifAngka
+                        };
+                    }).filter(item => item.tujuan); // Filter baris kosong
                     
-                    return {
-                        tujuan: row['Tujuan Kab/Kota/Kec'],
-                        tarif_per_kg: tarifAngka
-                    };
-                }).filter(item => item.tujuan); // Filter yang kosong
-                
-                // Ubah UI ketika data sudah siap
-                loadingStatus.classList.add('hidden');
-                form.classList.remove('hidden');
-            },
-            error: function(err) {
-                loadingStatus.textContent = "Gagal memuat file Tarif_Paket_Tanjungpinang.csv. Pastikan file ada di folder yang sama!";
-                loadingStatus.classList.remove('text-[#FF5722]', 'animate-pulse');
-                loadingStatus.classList.add('text-red-600');
-                console.error("CSV Parse Error:", err);
-            }
+                    loadingStatus.classList.add('hidden');
+                    form.classList.remove('hidden');
+                },
+                error: function(err) {
+                    loadingStatus.textContent = `Gagal memuat ${fileData[asalKey]}. Pastikan file CSV tersedia!`;
+                    loadingStatus.classList.remove('text-[#FF5722]', 'animate-pulse');
+                    loadingStatus.classList.add('text-red-600');
+                    console.error("CSV Parse Error:", err);
+                }
+            });
+        }
+
+        // Muat data saat pertama kali dibuka (Default: Batam)
+        loadTarif(selectAsal.value);
+
+        // Muat ulang data ketika Dropdown Asal diganti
+        selectAsal.addEventListener('change', function(e) {
+            loadTarif(e.target.value);
         });
 
-        // 2. Logika Autocomplete UI
+        // Logika Autocomplete UI
         inputTujuan.addEventListener('input', function() {
             const val = this.value.toLowerCase();
             dropdown.innerHTML = '';
@@ -196,7 +233,7 @@
                 return;
             }
 
-            // Filter data berdasar input (tampilkan maksimal 10 biar tidak berat/terlalu panjang)
+            // Filter data berdasar input (tampilkan maksimal 10 biar tidak berat)
             const filtered = dataTarif.filter(item => 
                 item.tujuan && item.tujuan.toLowerCase().includes(val)
             ).slice(0, 10);
@@ -223,28 +260,27 @@
             }
         });
 
-        // Sembunyikan dropdown jika klik di luar
+        // Sembunyikan dropdown jika klik di luar area
         document.addEventListener('click', function(e) {
             if (!inputTujuan.contains(e.target) && !dropdown.contains(e.target)) {
                 dropdown.classList.add('hidden');
             }
         });
 
-        // 3. Logika Perhitungan Berat (Toleransi 0.3 kg & Min. 3 Kg)
+        // Logika Perhitungan Berat (Toleransi 0.3 kg & Min. 3 Kg)
         function hitungBeratPos(weight) {
             let integerPart = Math.floor(weight);
             let fractionalPart = weight - integerPart;
             let finalWeight;
 
             // Logika Toleransi: Jika pecahan <= 0.3, bulatkan ke bawah. Jika > 0.3 bulatkan ke atas.
-            // Contoh: 3.3 -> 3 kg | 3.31 -> 4 kg
             if (fractionalPart <= 0.30) {
                 finalWeight = integerPart;
             } else {
                 finalWeight = integerPart + 1;
             }
 
-            // Mengingat ini adalah Paket Pos Biasa (PPB_PKT), berat minimal selalu ditagihkan 3 Kg.
+            // Aturan Paket Pos Biasa (PPB_PKT) Minimal 3 Kg
             if (finalWeight < 3) {
                 return 3;
             }
@@ -252,12 +288,12 @@
             return finalWeight;
         }
 
-        // 4. Handle Submit Form
+        // Handle Submit Form
         form.addEventListener('submit', function(e) {
             e.preventDefault();
 
             if (!selectedTarif) {
-                alert('Mohon pilih tujuan yang sesuai dari daftar dropdown pencarian.');
+                alert('Mohon pilih tujuan yang sesuai dari daftar pencarian.');
                 return;
             }
 
@@ -276,19 +312,21 @@
             // Hitung Chargeable Weight (tertinggi)
             const chargeableWeight = Math.max(beratAktual, beratVolumetrik);
 
-            // Hitung Berat Akhir (dengan aturan toleransi 0.3 dan minimum 3 Kg)
+            // Hitung Berat Akhir (dengan toleransi 0.3 kg dan minimum 3 Kg)
             const finalWeight = hitungBeratPos(chargeableWeight);
 
             // Hitung Tarif Total (Berat Akhir * Harga Per Kg dari CSV)
             const totalTarif = finalWeight * selectedTarif.tarif_per_kg;
 
             // Update UI Hasil
+            const namaAsal = selectAsal.options[selectAsal.selectedIndex].text;
+            document.getElementById('resAsal').textContent = namaAsal;
             document.getElementById('resTujuan').textContent = selectedTarif.tujuan;
             document.getElementById('resBeratAktual').textContent = beratAktual.toFixed(2) + ' kg';
             document.getElementById('resBeratVolumetrik').textContent = beratVolumetrik > 0 ? beratVolumetrik.toFixed(2) + ' kg' : '0 kg (Dimensi kosong)';
             document.getElementById('resChargeable').textContent = chargeableWeight.toFixed(2) + ' kg';
             
-            // Tambahkan penjelasan bila terkena min 3 kg
+            // Tambahkan penjelasan bila terkena aturan min 3 kg
             if (finalWeight === 3 && chargeableWeight < 3) {
                 document.getElementById('resFinalWeight').textContent = finalWeight + ' kg (Min. 3 kg PPB)';
             } else {
@@ -297,7 +335,7 @@
             
             document.getElementById('resTarif').textContent = formatRupiah(totalTarif);
 
-            // Tampilkan Result Box
+            // Tampilkan Box Rincian Tarif
             document.getElementById('resultBox').classList.remove('hidden');
         });
     </script>
