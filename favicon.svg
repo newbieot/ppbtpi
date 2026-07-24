@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PosRate parcel icon">
+  <defs>
+    <linearGradient id="bg" x1="8" y1="5" x2="56" y2="59" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fb923c"/>
+      <stop offset="1" stop-color="#ea580c"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="#0f172a"/>
+  <path d="M7 25.5 32 11l25 14.5v25L32 65 7 50.5v-25Z" fill="url(#bg)" transform="translate(0 -6)"/>
+  <path d="m14 22.5 18 10.2 18-10.2M32 53V32.7" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M22 17.8 40.2 28" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M8.5 42h11M5.5 48h14" fill="none" stroke="#fdba74" stroke-width="3.5" stroke-linecap="round"/>
+</svg>
